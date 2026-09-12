@@ -1,146 +1,71 @@
-# 🛡️ ScamShield PK
+# ScamShield PK 🛡️
 
-**AI-powered scam message detector built for Pakistan.**
+An AI-powered tool that checks suspicious SMS/WhatsApp messages, screenshots, links, and
+phone numbers common in Pakistan, and gives simple Roman Urdu advice on whether they're a scam.
 
-ScamShield PK helps everyday users identify fraudulent SMS, WhatsApp messages, and links — including fake bank alerts, lottery scams, and JazzCash/Easypaisa fraud — using Google's Gemini AI combined with VirusTotal link analysis. Built for a hackathon, with a focus on accessibility for elderly and low-literacy users through simple Roman Urdu explanations.
-
----
-
-## 📌 Problem
-
-Scammers in Pakistan frequently target users through fake SMS and WhatsApp messages, such as:
-
-- *"Aap ka account block ho gaya hai, is number par call karein"*
-- *"Aap ne Jeeto Pakistan lottery jeeti hai"*
-- *"BISP se paise milenge, yahan click karein"*
-
-Most people — especially elderly and low-literacy users — have no easy way to verify whether a message is genuine or a scam, and existing fraud-detection tools rarely support Roman Urdu.
-
-## ✅ Solution
-
-ScamShield PK lets a user paste a suspicious message, upload a screenshot, or check a phone number/link, and instantly returns:
-
-- A **risk score** (Low / Suspicious / High)
-- A list of specific **red flags** detected
-- Simple **Roman Urdu advice** on what to do next
-
----
-
-## ✨ Features
-
-| Feature | Description |
-|---|---|
-| 🔍 Message/Screenshot Checker | Paste text or upload a screenshot; AI extracts and analyzes it for scam patterns |
-| 📊 Risk Score & Red Flags | Combines Gemini AI analysis with VirusTotal link scanning for a final risk verdict |
-| 🕓 Session History | View previously checked messages in the current session |
-| 📰 Trending Scams | Awareness cards showing common current scam patterns in Pakistan |
-| ☎️ Contact Verifier | Basic check on whether a phone number follows official bank/company formats |
-
-> **Note:** Login and history are session-based for demo purposes and are not backed by a persistent database. In a production version, these would be backed by a real authentication system and database.
-
----
-
-## 🧱 Tech Stack
-
-- **Frontend:** Streamlit
-- **AI Engine:** Google Gemini API (text + vision)
-- **Link Safety:** VirusTotal API
-- **Deployment:** Streamlit Community Cloud
-
----
-
-## 📂 Project Structure
+## File Structure
 
 ```
 scamshield-pk/
-├── app.py                  # Main Streamlit app (UI + routing)
+├── app.py                   # Main Streamlit app (UI + integration) — Person 1 & 4
 ├── utils/
-│   ├── gemini.py            # Gemini API integration (message/image analysis)
-│   ├── virustotal.py        # VirusTotal link-checking integration
-│   └── risk_engine.py       # Combines Gemini + VirusTotal into final risk score
+│   ├── __init__.py
+│   ├── gemini.py             # Gemini AI analysis — Person 2
+│   ├── virustotal.py         # VirusTotal URL check — Person 3 (add this file)
+│   └── risk_engine.py        # Combines Gemini + VirusTotal into final score — Person 3
 ├── data/
-│   └── scams.json           # Trending scam examples (static data)
-├── .env                     # Local API keys (not committed — see .gitignore)
+│   └── scams.json            # Trending scams data — Person 4
+├── .env.example               # Template for required API keys
 ├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
----
+## Local Setup
 
-## 🔑 Environment Variables
-
-Create a `.env` file in the project root (never commit this file):
-
-```
-GEMINI_API_KEY=your_gemini_api_key_here
-VIRUSTOTAL_API_KEY=your_virustotal_api_key_here
-```
-
-| API | Purpose | Get a Free Key |
-|---|---|---|
-| Gemini API | Analyzes message/screenshot text for scam patterns | [aistudio.google.com](https://aistudio.google.com) |
-| VirusTotal API | Checks whether a link is malicious | [virustotal.com](https://www.virustotal.com) |
-
----
-
-## 🚀 Getting Started
-
-1. **Clone the repository**
+1. Clone the repo and enter the folder:
    ```bash
-   git clone https://github.com/syedmohtashimali-17/scamshield-pk.git
+   git clone https://github.com/<your-username>/scamshield-pk.git
    cd scamshield-pk
    ```
-
-2. **Install dependencies**
+2. Create a virtual environment and install dependencies:
    ```bash
+   python -m venv venv
+   source venv/bin/activate   # Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
-
-3. **Set up your `.env` file** (see above)
-
-4. **Run the app locally**
+3. Copy `.env.example` to `.env` and fill in your real keys:
+   ```bash
+   cp .env.example .env
+   ```
+4. Run the app:
    ```bash
    streamlit run app.py
    ```
 
----
+## Getting API Keys (Free)
 
-## 👥 Team & Task Division
+| API | Purpose | Where to get it |
+|---|---|---|
+| Gemini API | Analyze message/screenshot text | [aistudio.google.com](https://aistudio.google.com) → sign in with Google → "Get API key" |
+| VirusTotal API | Check if a link is malicious | [virustotal.com](https://virustotal.com) → create free account → API key in profile (4 req/min, 500/day) |
 
-| Member | Responsibility |
-|---|---|
-| Person 1 | Frontend & main UI (login, dashboard, result display) |
-| Person 2 | Gemini AI integration (message & screenshot analysis) |
-| Person 3 | VirusTotal integration, risk score engine, contact verifier |
-| Person 4 | History & trending scams UI, integration, deployment |
+**Never commit `.env` to GitHub.** It is already listed in `.gitignore`.
 
----
+## Deploying to Streamlit Community Cloud
 
-## 📄 Expected JSON Output Format
+1. Go to [share.streamlit.io](https://share.streamlit.io) and log in with your GitHub account.
+2. Click **"New app"** and select the `scamshield-pk` repository, branch (`main`), and main file (`app.py`).
+3. Before or after deploying, open the app's **Settings → Secrets** and paste:
+   ```toml
+   GEMINI_API_KEY = "your_real_gemini_key"
+   VIRUSTOTAL_API_KEY = "your_real_virustotal_key"
+   ```
+   Streamlit exposes these as environment variables automatically at runtime — no code changes needed since `app.py` reads keys via `os.environ.get(...)` inside `utils/gemini.py` and `utils/risk_engine.py`.
+4. Click **Deploy**. In a few minutes you'll get a live public link (e.g. `https://scamshield-pk.streamlit.app`) to share with judges.
+5. Every time someone pushes to the connected GitHub branch, Streamlit Cloud auto-redeploys.
 
-All AI analysis results follow this shared schema so modules can be developed independently:
+## Notes
 
-```json
-{
-  "risk_level": "Low | Suspicious | High",
-  "risk_score": 0,
-  "scam_type": "type of scam detected",
-  "red_flags": ["reason 1", "reason 2"],
-  "explanation": "short explanation in English",
-  "recommended_action": "what the user should do",
-  "roman_urdu_advice": "advice in Roman Urdu"
-}
-```
-
----
-
-## 🌐 Live Demo
-
-_Deployment link will be added here once the app is live on Streamlit Community Cloud._
-
----
-
-## ⚠️ Disclaimer
-
-This project was built as a hackathon prototype. Login and history features are demonstration-only (session-based, no persistent database). It is intended to showcase AI-based scam detection and should not be used as a sole source of fraud verification.
+- This is a hackathon demo: login and history are session-only (`st.session_state`), no real database or authentication.
+- `utils/gemini.py` and `utils/risk_engine.py` currently contain **mock/placeholder logic** so the full app runs end-to-end even before Person 2 and Person 3 finish their real implementations. They must keep the same function names and return shapes when replacing the mock logic (see the agreed JSON contract in each file's docstring).
