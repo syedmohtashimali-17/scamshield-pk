@@ -78,7 +78,7 @@ def verify_contact(number: str) -> str:
     number = number.strip()
     if re.fullmatch(r"03\d{9}", number):
         return "⚠️ Suspicious - personal number"
-    elif re.fullmatch(r"\d{3,5}", number):
+    elif re.fullmatch(r"[1-9]\d{2,4}", number):
         return "✅ Looks like an official short-code"
     else:
         return "❓ Format samajh nahi aaya, dobara check karein"
