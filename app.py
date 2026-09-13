@@ -1,24 +1,20 @@
 """
-ScamShield PK - app.py (INTEGRATED VERSION - Person 4)
---------------------------------------------------------
-This file keeps Person 1's original screens (Login, Welcome, Dashboard)
-but replaces the old DUMMY functions with the team's REAL, already-written
-integration code:
+ScamShield PK - Person 1 ka kaam
+--------------------------------
+Ye file 3 screens banati hai:
+1. Login Screen
+2. Welcome Screen
+3. Main Dashboard (Check + Result + History + Trending Scams + Verify Contact)
 
-    Person 2 -> utils/gemini.py         -> analyze_message(text, image_bytes)
-    Person 3 -> virustotal/virus.py      -> check_message_links(message_text)
-    Person 3 -> virustotal/riskengine.py -> combine_risk_score(gemini_result, vt_results)
-                                          -> verify_contact(number)
-
-Nothing in utils/gemini.py, virustotal/virus.py, or virustotal/riskengine.py
-needs to change - this file only IMPORTS and CALLS their existing functions.
+Person 2 aur Person 3 apne functions (get_ai_result, check_link) banayenge.
+Abhi ke liye maine "DUMMY" (fake/test) functions bana diye hain, taake aap
+akele bhi poori UI test kar sakein. Jab Person 2/3 ka kaam ready ho jaye,
+bas neeche wale dummy functions ko unke real functions se replace kar dena.
 """
 
 import streamlit as st
-
-from utils.gemini import analyze_message
-from virustotal.virus import check_message_links
-from virustotal.riskengine import combine_risk_score, verify_contact
+import re
+import random
 
 # ---------------------------------------------------------
 # PAGE SETTINGS
@@ -37,51 +33,55 @@ if "history" not in st.session_state:
 
 
 # ---------------------------------------------------------
-# REAL INTEGRATION LOGIC (replaces the old dummy functions)
+# DUMMY FUNCTIONS (Person 2 aur 3 inhe real functions se replace karenge)
 # ---------------------------------------------------------
-def get_ai_result(message_text: str, image_bytes: bytes | None = None) -> dict:
+def get_ai_result(message_text: str) -> dict:
     """
-    Real pipeline:
-    1. Person 2's Groq/Gemini model reads the message (+ screenshot) and
-       returns risk_level, risk_score, red_flags, etc.
-    2. Person 3's VirusTotal check looks at any links inside the message.
-    3. Person 3's combine_risk_score() merges both into the final result
-       shown to the user.
-
-    This function never raises - any failure inside the real modules
-    already falls back safely (see their own docstrings), and we wrap
-    the whole pipeline in a try/except as a last line of defense so the
-    UI never crashes.
+    NORMALLY ye function Person 2 (Gemini) dega.
+    Abhi test ke liye fake result generate kar raha hai,
+    lekin EXACT wohi JSON format use kar raha hai jo team ne finalize kiya:
+    risk_level, risk_score, scam_type, red_flags, explanation,
+    recommended_action, roman_urdu_advice
     """
-    try:
-        gemini_result = analyze_message(message_text, image_bytes=image_bytes)
-    except Exception:
-        gemini_result = {
-            "risk_score": 50,
-            "scam_type": "Unable to analyze",
-            "red_flags": ["AI analysis could not be completed"],
-            "explanation": "The message could not be fully analyzed.",
-            "recommended_action": "Do not click links or share OTP/PIN until verified.",
-            "roman_urdu_advice": "Is message par foran bharosa na karein.",
+    text = message_text.lower()
+    if any(word in text for word in ["lottery", "jeeti", "click", "block", "otp", "call kare"]):
+        return {
+            "risk_level": "High",
+            "risk_score": random.randint(80, 97),
+            "scam_type": "Fake Bank / Lottery Scam",
+            "red_flags": [
+                "Urgency wali language use ho rahi hai",
+                "Personal number diya gaya hai official ki jagah",
+                "OTP ya click karne ko bola gaya hai",
+            ],
+            "explanation": "This message shows common scam patterns like urgency and unofficial contact.",
+            "recommended_action": "Is number ko block karein aur kisi ko OTP na dein",
+            "roman_urdu_advice": "Yeh fake message lagta hai. Kisi ko OTP ya code kabhi na dein.",
+        }
+    else:
+        return {
+            "risk_level": "Low",
+            "risk_score": random.randint(5, 20),
+            "scam_type": "Normal Message",
+            "red_flags": [],
+            "explanation": "No obvious scam patterns detected.",
+            "recommended_action": "Koi khaas action zaroori nahi",
+            "roman_urdu_advice": "Ye message theek lag raha hai, phir bhi hoshiyar rahein.",
         }
 
-    vt_results = []
-    if message_text and message_text.strip():
-        try:
-            # Only check the first 2 links to keep the wait time reasonable -
-            # each VirusTotal check can take ~15 seconds.
-            all_vt_results = check_message_links(message_text)
-            vt_results = all_vt_results[:2]
-        except Exception:
-            vt_results = []
 
-    try:
-        final_result = combine_risk_score(gemini_result, vt_results)
-    except Exception:
-        final_result = gemini_result
-        final_result.setdefault("risk_level", "Suspicious")
-
-    return final_result
+def verify_contact(number: str) -> str:
+    """
+    NORMALLY Person 3 ka function. Abhi simple pattern check kar raha hai:
+    official numbers usually 11 digit ya short-code hote hain.
+    """
+    number = number.strip()
+    if re.fullmatch(r"03\d{9}", number):
+        return "⚠️ Suspicious - personal number"
+    elif re.fullmatch(r"[1-9]\d{2,4}", number):
+        return "✅ Looks like an official short-code"
+    else:
+        return "❓ Format samajh nahi aaya, dobara check karein"
 
 
 # ---------------------------------------------------------
@@ -102,6 +102,8 @@ def login_screen():
             st.session_state.user_name = name.strip()
             st.session_state.page = "welcome"
             st.rerun()
+
+  
 
 
 # ---------------------------------------------------------
@@ -149,11 +151,10 @@ def dashboard_screen():
         if message_text.strip() == "" and uploaded_image is None:
             st.warning("Pehle message likhein ya screenshot upload karein.")
         else:
-            image_bytes = uploaded_image.getvalue() if uploaded_image else None
-            with st.spinner("AI aur VirusTotal check ho raha hai... (link hone par 15-30 second lag sakte hain)"):
-                result = get_ai_result(message_text, image_bytes=image_bytes)
-
+            # Yahan Person 2 ka real function call hoga (text + image)
+            result = get_ai_result(message_text)
             st.session_state.last_result = result
+            # History mein save karna
             short_text = message_text[:35] + "..." if message_text else "Screenshot check"
             st.session_state.history.insert(0, {"text": short_text, "risk": result["risk_level"]})
 
@@ -165,17 +166,12 @@ def dashboard_screen():
         color = {"High": "🔴", "Suspicious": "🟠", "Low": "🟢"}.get(r["risk_level"], "⚪")
         st.markdown(f"**{color} {r['risk_score']}% {r['risk_level']} Risk**")
 
-        if r.get("red_flags"):
+        if r["red_flags"]:
             st.markdown("**Red Flags:**")
             for flag in r["red_flags"]:
                 st.markdown(f"- {flag}")
 
-        st.info(f"Advice: {r.get('roman_urdu_advice', '')}")
-
-        with st.expander("More details"):
-            st.write(f"**Scam type:** {r.get('scam_type', 'N/A')}")
-            st.write(f"**Explanation:** {r.get('explanation', 'N/A')}")
-            st.write(f"**Recommended action:** {r.get('recommended_action', 'N/A')}")
+        st.info(f"Advice: {r['roman_urdu_advice']}")
 
     st.markdown("---")
 
@@ -205,18 +201,7 @@ def dashboard_screen():
         number = st.text_input("Number", placeholder="0300-1234567", label_visibility="collapsed")
         if st.button("Verify"):
             if number.strip():
-                try:
-                    contact_result = verify_contact(number.strip())
-                    status = contact_result.get("status", "invalid_format")
-                    message = contact_result.get("message", "Format samajh nahi aaya.")
-                    if status == "official_pattern":
-                        st.success(message)
-                    elif status == "suspicious_personal_number":
-                        st.warning(message)
-                    else:
-                        st.info(message)
-                except Exception:
-                    st.error("Number verify karte waqt masla hua, dobara koshish karein.")
+                st.warning(verify_contact(number))
             else:
                 st.warning("Number likhein pehle.")
 
