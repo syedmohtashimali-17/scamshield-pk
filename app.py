@@ -103,7 +103,7 @@ def login_screen():
             st.session_state.page = "welcome"
             st.rerun()
 
-    st.caption("(No password / real account needed - demo login)")
+  
 
 
 # ---------------------------------------------------------
